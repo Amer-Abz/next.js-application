@@ -22,11 +22,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import ROUTES from "@/constants/routes";
+import { Description } from "@radix-ui/react-dialog";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface AuthFormProps<T extends FieldValues> {
   schema: ZodType<T>;
   defaultValues: T;
-  onSubmit: (data: T) => Promise<{ success: boolean }>;
+  onSubmit: (data: T) => Promise<ActionResponse>;
   formType: "SIGN_IN" | "SIGN_UP";
 }
 
@@ -36,13 +39,38 @@ const AuthForm = <T extends FieldValues>({
   formType,
   onSubmit,
 }: AuthFormProps<T>) => {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
   });
 
-  const handleSubmit: SubmitHandler<T> = async () => {
-    // TODO: Authenticate User
+  const handleSubmit: SubmitHandler<T> = async (data) => {
+    const result = (await onSubmit(data)) as ActionResponse;
+
+    if(result?.success){
+      toast(
+        formType === "SIGN_IN" ? "Signed in successfully" : "Signed up successfully",
+        {
+          description: formType === "SIGN_IN" ? "Welcome back!" : "Your account has been created.",
+        }
+      );
+
+      router.push(ROUTES.HOME);
+    }else{
+      
+      toast(`Error ${result?.status}`, {
+        description: result?.error?.message,
+        style: {
+          backgroundColor: "#fef2f2", // Light red background (like shadcn destructive)
+          color: "#b91c1c", // Dark red text color
+          border: "1px solid #b91c1c", // Red border
+        },
+        icon: "⚠️", // Optional: Add a warning/error icon
+        duration: 5000, // Adjust duration as needed
+      });
+    }
   };
 
   const buttonText = formType === "SIGN_IN" ? "Sign In" : "Sign Up";
