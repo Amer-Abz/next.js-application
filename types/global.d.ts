@@ -12,6 +12,7 @@ interface Tag {
   interface Question {
     _id: string;
     title: string;
+    content:string;
     tags: Tag[];
     author: Author;
     createdAt: Date;
@@ -41,4 +42,12 @@ interface Tag {
     searchParams: Promise<Record<string,string>>;
   }
 
+
+interface PaginatedSearchParams {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  filter?:string;
+  sort?: string;
+}
  

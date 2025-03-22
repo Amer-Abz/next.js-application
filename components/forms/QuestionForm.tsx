@@ -23,7 +23,7 @@ import { MDXEditorMethods } from "@mdxeditor/editor";
 import dynamic from "next/dynamic";
 import { z } from "zod";
 import TagCard from "../cards/TagCard";
-import { createQuestion } from "@/lib/actions/question.action";
+import { createQuestion, editQuestion } from "@/lib/actions/question.action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import ROUTES from "@/constants/routes";
@@ -32,7 +32,12 @@ const Editor = dynamic(() => import('@/components/editor'), {
   // Make sure we turn SSR off
   ssr: false})
 
-const QuestionForm = () => {
+  interface Params{
+    question?:Question;
+    isEdit?:boolean;
+  }
+
+const QuestionForm = ({question, isEdit = false}:Params) => {
   const router = useRouter();
   const editorRef = useRef<MDXEditorMethods>(null);
   const [isPending, startTransition]= useTransition();
@@ -40,9 +45,9 @@ const QuestionForm = () => {
   const form = useForm<z.infer<typeof AskQuestionSchema>>({
     resolver: zodResolver(AskQuestionSchema),
     defaultValues: {
-      title: "",
-      content: "",
-      tags: [],
+      title: question?.title || "",
+      content: question?.content || "",
+      tags: question?.tags.map((tag)=> tag.name) || [],
     },
   });
 
@@ -83,6 +88,21 @@ const QuestionForm = () => {
   const handleCreateQuestion = async (data: z.infer<typeof AskQuestionSchema>) => {
     
     startTransition(async()=>{
+      if(isEdit && question){
+        const result = await editQuestion({questionId: question?._id,...data})
+        if(result.success){
+          toast.success('Question updated successfully', {
+            description: 'Success',
+          })
+          if(result.data) router.push(ROUTES.QUESTION(result.data._id))
+        } else{
+          toast.error(`Error ${result.status}`, {
+            description: result.error?.message || 'Something went wrong',
+          });
+        } 
+        return;
+      }
+
      const result = await createQuestion(data);
 
     if(result.success){
@@ -197,7 +217,7 @@ const QuestionForm = () => {
                 <ReloadIcon className="mr-2 size-4 animate-spin"/>
                 <span>Submitting</span>
               </>
-            ): <>Ask A Question</>}
+            ): <>{isEdit ? "Edit" : "Ask a Question"}</>}
             
           </Button>
         </div>
