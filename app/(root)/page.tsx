@@ -46,6 +46,7 @@ const Home = async ({ searchParams }: SearchParams) => {
         />
       </section>
       <HomeFilter />
+
       <DataRenderer
         success={success}
         error={error}
